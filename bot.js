@@ -15,6 +15,10 @@ const { handleRecipientCommands } = require('./handlers/recipients');
 
 const BOT_API_TOKEN = process.env.BOT_API_TOKEN;
 const ADMIN_ID = parseInt(process.env.ADMIN_ID, 10);
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const isProduction = NODE_ENV === 'production'; 
+const WEBHOOK_DOMAIN = process.env.WEBHOOK_DOMAIN;
+const PORT = process.env.PORT || 3000;
 
 if (!BOT_API_TOKEN || isNaN(ADMIN_ID)) {
   console.error('Error: BOT_API_TOKEN or ADMIN_ID is not set or is incorrect in the .env file.');
@@ -160,8 +164,19 @@ bot.on('text', async (ctx) => {
   }
 });
 
-bot.launch();
-console.log('🚀 The bot is up and running and ready to go!');
+// Launch bot
+if (isProduction) {
+  bot.launch({
+    webhook: {
+      domain: WEBHOOK_DOMAIN,
+      port: PORT,
+    },
+  });
+  console.log('🚀 Bot launched in webhook mode');
+} else {
+  bot.launch();
+  console.log('🚀 Bot launched in polling mode');
+}
 
 // Graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
