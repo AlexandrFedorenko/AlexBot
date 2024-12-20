@@ -1,0 +1,23 @@
+# Node modules
+node_modules/
+
+# Environment files
+.env
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Encrypted and other temporary files
+recipients.json
+*.enc.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git temporary files
+*.swp
+*.swo
