@@ -1,50 +1,72 @@
 const axios = require('axios');
+const { translate } = require('@vitalets/google-translate-api');
+require('dotenv').config();
 
 /**
- * Получение гороскопа по знаку зодиака и дню.
- * @param {Context} ctx - Контекст Telegraf.
- * @param {string} sign - Знак зодиака.
- * @param {string} day - День (today, tomorrow, yesterday).
- * @param {string} errorMessage - Сообщение об ошибке.
+ * Get horoscope by zodiac sign and day with translation into Russian.
+ * @param {Context} ctx - Telegraf Context.
+ * @param {string} sign - Zodiac sign.
+ * @param {string} day - Day (today, tomorrow, etc.).
+ * @param {string} errorMessage - Error message.
  */
 async function handleHoroscope(ctx, sign, day = 'today', errorMessage) {
   try {
-    console.log(`🛠️ Запрос к API для знака: ${sign}, день: ${day}`);
-
     const options = {
       method: 'GET',
-      url: 'https://alexbotteg.onrender.com/api/data',
-      params: { sign, day },
+      url: process.env.HOROSCOPE_API_URL, 
+      params: {
+        sign,
+        day    // 'today' / 'tomorrow'
+      },
       headers: {
-        'Client-ID': process.env.CLIENT_ID,
-        'Authorization': `Bearer ${process.env.CLIENT_SECRET}`
+        'x-rapidapi-key': process.env.HOROSCOPE_API_KEY,
+        'x-rapidapi-host': process.env.HOROSCOPE_API_HOST
       }
     };
 
     const response = await axios.request(options);
+    console.log('🔥 Ответ от нового API:', response.data);
 
-    if (!response.data || !response.data.horoscope) {
+    // IMPORTANT! Look at the structure:
+    // {
+    //   data: {
+    //     date: 'Dec 24, 2024',
+    //     horoscope_data: 'Try not to be too competitive today, Cancer...'
+    //   },
+    //   status: 200,
+    //   success: true
+    // }
+
+    const apiData = response.data;
+    const horoscopeData = apiData?.data?.horoscope_data;
+    if (!horoscopeData) {
       console.warn(`⚠️ API не вернул данных для знака: ${sign}`);
-      ctx.reply('❌ Гороскоп временно недоступен. Пожалуйста, попробуйте позже.');
-      return;
+      return ctx.reply('❌ Гороскоп временно недоступен. Пожалуйста, попробуйте позже.');
     }
 
-    const data = response.data.horoscope;
+    let originalText = `✨ **Гороскоп для ${sign.toUpperCase()} на ${day}:**\n`;
+    originalText += `🔮 Предсказание: ${horoscopeData}\n`;
 
-    const horoscopeMessage = `
-✨ **Гороскоп для ${sign.toUpperCase()} на ${day}:**  
-❤️ Совместимость: ${data.compatibility || 'Нет данных'}  
-🔢 Счастливое число: ${data.lucky_number || 'Нет данных'}  
-⏰ Счастливое время: ${data.lucky_time || 'Нет данных'}  
-🎨 Цвет: ${data.color || 'Нет данных'}  
-😊 Настроение: ${data.mood || 'Нет данных'}  
-📝 Описание: ${data.description || 'Нет данных'}
-    `;
+    const { text: translatedText } = await translate(originalText, { to: 'ru' });
+    ctx.reply(translatedText);
 
-    ctx.reply(horoscopeMessage);
   } catch (error) {
     console.error('❌ Ошибка при получении гороскопа:', error.response?.data || error.message);
-    ctx.reply(errorMessage || '❌ Произошла ошибка при получении гороскопа. Попробуйте позже.');
+
+    if (
+      error.response 
+      && error.response.data 
+      && typeof error.response.data.message === 'string'
+      && error.response.data.message.includes('You have exceeded the MONTHLY quota')
+    ) {
+      ctx.reply(
+        'Извините, мы используем бесплатную версию гороскопа, и лимит запросов исчерпан. Попробуйте завтра или в начале следующего месяца.'
+      );
+    } else {
+      ctx.reply(
+        errorMessage || '❌ Произошла ошибка при получении гороскопа. Попробуйте позже.'
+      );
+    }
   }
 }
 

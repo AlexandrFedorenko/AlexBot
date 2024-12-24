@@ -13,12 +13,10 @@
     "@vitalets/google-translate-api": "^9.2.0",
     "axios": "^1.7.9",
     "dotenv": "^16.4.7",
+    "firebase-admin": "^13.0.2",
     "node-schedule": "^2.1.1",
-    "openai": "^4.77.0",
+    "request": "^2.88.2",
     "telegraf": "^4.16.3",
-    "ton": "^13.9.0",
-    "ton-core": "^0.53.0",
-    "ton-crypto": "^3.2.0",
     "translate": "^3.0.1"
   }
 }
