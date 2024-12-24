@@ -9,16 +9,13 @@ const { handleMotivation } = require('./handlers/motivation');
 const { handleRates } = require('./handlers/rates');
 const { getTimeUntilNewYear } = require('./handlers/newyear');
 const handleListUsers = require('./handlers/listUsers');
-const { loadRecipients, saveRecipients } = require('./utils/storage');
-const { handleRecipientCommands } = require('./handlers/recipients');
+const { saveUser, loadUsers, deleteUser } = require('./utils/users');
 const { handleHoroscope } = require('./handlers/horoscope');
-
-
 
 const BOT_API_TOKEN = process.env.BOT_API_TOKEN;
 const ADMIN_ID = parseInt(process.env.ADMIN_ID, 10);
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const isProduction = NODE_ENV === 'production'; 
+const isProduction = NODE_ENV === 'production';
 const WEBHOOK_DOMAIN = process.env.WEBHOOK_DOMAIN;
 const PORT = process.env.PORT || 3000;
 
@@ -29,7 +26,6 @@ if (!BOT_API_TOKEN || isNaN(ADMIN_ID)) {
 
 const bot = new Telegraf(BOT_API_TOKEN);
 let userStates = {};
-let newYearRecipients = loadRecipients();
 
 function loadTexts() {
   const filePath = './texts.json';
@@ -48,43 +44,67 @@ function loadTexts() {
 
 const texts = loadTexts();
 
-handleListUsers(bot, newYearRecipients, texts, ADMIN_ID);
+handleListUsers(bot, texts, ADMIN_ID);
 
-// Scheduling the sending of messages
 function scheduleMessage(date, message) {
-  schedule.scheduleJob(date, () => {
+  schedule.scheduleJob(date, async () => {
     console.log(`The dispatch scheduler is running: ${new Date()}`);
-    newYearRecipients.forEach((recipient) => {
-      bot.telegram.sendMessage(recipient.id, message)
-        .then(() => console.log(`Message sent to user ${recipient.username}`))
-        .catch((error) =>
-          console.error(`Error when sending a message to a user ${recipient.username}:`, error.message)
-        );
-    });
+
+    try {
+      const users = await loadUsers();
+      for (const user of users) {
+        const telegramId = user.telegramId;
+
+        await bot.telegram.sendMessage(telegramId, message);
+        console.log(`Message sent to user ${user.username}`);
+      }
+    } catch (error) {
+      console.error('Error when sending scheduled messages:', error.message);
+    }
   });
 }
 
-// Scheduled messages
-const date1 = new Date('2024-12-22T15:15:15');
-const message1 = 'Привет! Напоминаем, что скоро Новый год. Готовьтесь к праздникам! 🎄';
+const date1 = new Date('2024-12-28T12:00:15');
+const message1 = 'Привіт! Нагадуємо, що скоро Новий рік. Готуйтеся до свят! "Хильни чарку 😉🎆" 🎄';
 
-const date2 = new Date('2024-12-31T00:00:00');
-const message2 = '🎉 С Новым годом! Желаем вам счастья, здоровья и удачи в 2025 году!';
+const date4 = new Date('2024-12-24T17:17:15');
+const message4 = 'Привіт! Нагадуємо, що скоро Новий рік. Готуйтеся до свят! "Хильни чарку 😉🎆" 🎄';
+
+const date3 = new Date('2024-12-25T10:00:15');
+const message3 = '🎄✨ З Різдвом Христовим! ✨🎄 Нехай це світле свято принесе у ваш дім радість, затишок і любов. ❤️ Бажаємо вам міцного здоров\'я, душевного спокою та Божої благодаті. 🌟 Нехай у ваших серцях панує віра, надія та любов. 🎁 Мирного неба над головою та щасливих свят! 🕊️🎶';
+
+const date2 = new Date('2025-01-01T00:00:00');
+const message2 = '🎆✨ З Новим Роком! ✨🎆 Нехай 2025 рік стане роком щастя, здоров\'я та здійснення всіх заповітних мрій! 🥂 Бажаємо вам яскравих моментів, теплих зустрічей, невичерпної енергії для нових звершень та мирного неба над головою. 🌟 Зі святом! 🎄🎁😉';
+
 
 scheduleMessage(date1, message1);
 scheduleMessage(date2, message2);
+scheduleMessage(date3, message3);
+scheduleMessage(date4, message4);
 
-// Handler for the /start command
-bot.start((ctx) => {
+bot.start(async (ctx) => {
   const userId = ctx.from.id;
-  const username = ctx.from.username ? `@${ctx.from.username}` : `${ctx.from.first_name}`;
+  // username can be empty, then we'll take first_name
+  const username = ctx.from.username
+    ? `@${ctx.from.username}`
+    : (ctx.from.first_name || 'noname');
 
-  console.log(`Пользователь ${username} с ID ${userId} запустил бота.`);
+  console.log(`Пользователь ${username} с Telegram ID ${userId} запустил бота.`);
 
-  if (!newYearRecipients.some((user) => user.id === userId)) {
-    newYearRecipients.push({ username, id: userId });
-    saveRecipients(newYearRecipients);
-    console.log(`Пользователь ${username} добавлен в список.`);
+  try {
+    const users = await loadUsers();
+    const isExisting = users.some((u) => Number(u.telegramId) === Number(userId));
+
+    if (!isExisting) {
+      await saveUser({
+        telegramId: userId,
+        username,
+        createdAt: new Date().toISOString(),
+      });
+      console.log(`Пользователь ${username} добавлен в Firestore.`);
+    }
+  } catch (err) {
+    console.error('Ошибка при проверке/добавлении пользователя в Firestore:', err.message);
   }
 
   const buttons = [
@@ -95,8 +115,7 @@ bot.start((ctx) => {
 
   if (userId === ADMIN_ID) {
     buttons.push(
-      [texts.buttons.remove_user, texts.buttons.test_broadcast],
-      [texts.buttons.list_recipients]
+      [texts.buttons.remove_user, texts.buttons.list_recipients]
     );
   }
 
@@ -104,9 +123,9 @@ bot.start((ctx) => {
 });
 
 bot.hears(texts.buttons.new_year, (ctx) => {
-  const newYearMessageTemplate = texts.messages.new_year_time; 
+  const newYearMessageTemplate = texts.messages.new_year_time;
   const timeUntilNewYear = getTimeUntilNewYear(newYearMessageTemplate);
-  ctx.reply(timeUntilNewYear); 
+  ctx.reply(timeUntilNewYear);
 });
 
 bot.hears(texts.buttons.weather, (ctx) => {
@@ -120,26 +139,36 @@ bot.hears(texts.buttons.weather_3days, (ctx) => {
 });
 
 bot.hears(texts.buttons.motivation, async (ctx) => {
-  await handleMotivation(ctx, texts.messages.motivation_generating, texts.messages.motivation_result, texts.messages.motivation_error, texts);
+  await handleMotivation(
+    ctx,
+    texts.messages.motivation_generating,
+    texts.messages.motivation_result,
+    texts.messages.motivation_error,
+    texts
+  );
 });
 
 bot.hears(texts.buttons.rates, async (ctx) => {
-  await handleRates(ctx, texts.messages.rates_generating, texts.messages.rates_result, texts.messages.rates_error);
+  await handleRates(
+    ctx,
+    texts.messages.rates_generating,
+    texts.messages.rates_result,
+    texts.messages.rates_error
+  );
 });
 
-
-handleRecipientCommands(bot, newYearRecipients, saveRecipients, texts, ADMIN_ID, userStates);
-
-
-
-
-
+bot.hears(texts.buttons.remove_user, (ctx) => {
+  if (ctx.from.id === ADMIN_ID) {
+    userStates[ctx.from.id] = 'remove_username';
+    ctx.reply('Введите username (с @) или имя, как он отображается в базе, для удаления:');
+  } else {
+    ctx.reply(texts.messages.no_permission);
+  }
+});
 
 bot.hears(texts.buttons.back_to_main, (ctx) => {
   const userId = ctx.from.id;
-  console.log(`🛠️ [DEBUG] Возврат в главное меню пользователем ${ctx.from.username || ctx.from.id}`);
-
-  userStates[userId] = null; // Сбрасываем состояние
+  userStates[userId] = null;
 
   const buttons = [
     [texts.buttons.new_year, texts.buttons.weather],
@@ -147,17 +176,12 @@ bot.hears(texts.buttons.back_to_main, (ctx) => {
     [texts.buttons.motivation, texts.buttons.rates]
   ];
 
-  ctx.reply(texts.start_message, Markup.keyboard(buttons).resize());
-});
+  if (userId === ADMIN_ID) {
+    buttons.push(
+      [texts.buttons.remove_user, texts.buttons.list_recipients]
+    );
+  }
 
-
-bot.hears(texts.buttons.back_to_main, (ctx) => {
-  userStates[ctx.from.id] = null;
-  const buttons = [
-    [texts.buttons.new_year, texts.buttons.weather],
-    [texts.buttons.weather_3days, texts.buttons.horoscope],
-    [texts.buttons.motivation, texts.buttons.rates]
-  ];
   ctx.reply(texts.start_message, Markup.keyboard(buttons).resize());
 });
 
@@ -178,13 +202,8 @@ bot.hears([
   const userId = ctx.from.id;
   const state = userStates[userId];
 
-  console.log(`🛠️ [DEBUG] Состояние пользователя: ${state}`);
-  console.log(`🛠️ [DEBUG] Знак зодиака выбран: ${ctx.message.text}`);
-
   if (state !== 'horoscope_menu') {
-    console.log(`❌ [DEBUG] Пользователь не в состоянии "horoscope_menu".`);
-    ctx.reply('❌ Пожалуйста, используйте команду "🔮 Гороскоп", чтобы выбрать знак зодиака.');
-    return;
+    return ctx.reply('❌ Пожалуйста, используйте кнопку "🔮 Гороскоп", чтобы выбрать знак зодиака.');
   }
 
   const signMap = {
@@ -203,11 +222,9 @@ bot.hears([
   };
 
   const selectedSign = signMap[ctx.message.text];
-
   if (selectedSign) {
-    console.log(`🛠️ [DEBUG] Знак: ${selectedSign}`);
     await handleHoroscope(ctx, selectedSign, 'today', texts.messages.horoscope_error);
-    userStates[userId] = null; // Сбрасываем состояние
+    userStates[userId] = null;
   } else {
     ctx.reply('❌ Неправильный выбор знака зодиака.');
   }
@@ -215,13 +232,8 @@ bot.hears([
 
 bot.hears(texts.buttons.horoscope, (ctx) => {
   const userId = ctx.from.id;
-  console.log(`🛠️ [DEBUG] Кнопка "Гороскоп" нажата пользователем ${ctx.from.username || ctx.from.id}`);
-
-  // Устанавливаем состояние пользователя
   userStates[userId] = 'horoscope_menu';
-  console.log(`🛠️ [DEBUG] Состояние пользователя установлено: ${userStates[userId]}`);
 
-  // Создаем клавиатуру с кнопками знаков зодиака
   const zodiacButtons = [
     [texts.zodiac_buttons.aries, texts.zodiac_buttons.taurus],
     [texts.zodiac_buttons.gemini, texts.zodiac_buttons.cancer],
@@ -233,57 +245,66 @@ bot.hears(texts.buttons.horoscope, (ctx) => {
   ];
 
   ctx.reply(
-    texts.messages.horoscope_prompt || "🔮 Выберите ваш знак зодиака:",
+    texts.messages.horoscope_prompt,
     Markup.keyboard(zodiacButtons).resize()
   );
-
-  console.log('🛠️ [DEBUG] Клавиатура с кнопками зодиака отправлена.');
 });
 
-
-
-
+/**
+* A common text handler where all messages are stacked,
+* if they are not intercepted above.
+ */
 bot.on('text', async (ctx) => {
   const userId = ctx.from.id;
-  const state = userStates[userId];
-  console.log(`🔄 [DEBUG] Состояние пользователя: ${state}`);
-  console.log(`🔄 [DEBUG] Текст сообщения: ${ctx.message?.text}`);
+  const state = userStates[userId] || null;
 
   if (state === 'weather') {
-    await handleWeatherInput(ctx, texts.messages.weather_result, texts.messages.weather_error, texts);
+    await handleWeatherInput(
+      ctx,
+      texts.messages.weather_result,
+      texts.messages.weather_error,
+      texts
+    );
     userStates[userId] = null;
     return;
   }
 
   if (state === 'weather_3days') {
-    await handleWeatherForecast(ctx, texts.messages.weather_3days_result, texts.messages.weather_3days_error, texts);
+    await handleWeatherForecast(
+      ctx,
+      texts.messages.weather_3days_result,
+      texts.messages.weather_3days_error,
+      texts
+    );
     userStates[userId] = null;
     return;
   }
 
   if (state === 'remove_username') {
     const usernameToRemove = ctx.message.text.trim().toLowerCase();
-    const index = newYearRecipients.findIndex((user) => user.username.toLowerCase() === usernameToRemove);
 
-    if (index === -1) {
-      ctx.reply(texts.messages.remove_manual_error);
-      userStates[userId] = null;
-      return;
+    try {
+      const users = await loadUsers();
+      const userFound = users.find((u) =>
+        u.username.toLowerCase() === usernameToRemove
+      );
+
+      if (!userFound) {
+        ctx.reply('Пользователь с таким username не найден в базе.');
+      } else {
+        await deleteUser(userFound.docId);
+        ctx.reply(`Пользователь ${userFound.username} удалён.`);
+      }
+    } catch (err) {
+      console.error('Ошибка при удалении пользователя из Firestore:', err.message);
+      ctx.reply('Произошла ошибка при удалении пользователя.');
     }
 
-    const removedUser = newYearRecipients.splice(index, 1)[0];
-    saveRecipients(newYearRecipients);
-    console.log(`Пользователь ${removedUser.username} удален из списка.`);
-    ctx.reply(texts.messages.remove_manual_success.replace('{username}', removedUser.username));
     userStates[userId] = null;
     return;
   }
-
-  console.log('🔍 [DEBUG] Нераспознанное сообщение без состояния.');
 });
 
-
-// Launch bot
 if (isProduction) {
   bot.launch({
     webhook: {
@@ -300,3 +321,8 @@ if (isProduction) {
 // Graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
+
+// small fix to prevent the server from hiccuping, delete if you use the paid version
+setInterval(() => {
+  console.log('🚀 The server is active, execute the task...');
+}, 600000);
