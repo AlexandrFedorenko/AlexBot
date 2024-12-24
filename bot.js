@@ -440,3 +440,13 @@ if (isProduction) {
 // Graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
+
+
+setInterval(async () => {
+  try {
+    await bot.telegram.getMe();
+    console.log('✅ Keep-Alive via Telegram (getMe) executed successfully');
+  } catch (err) {
+    console.error('❌ Keep-Alive via Telegram (getMe) failed:', err.message);
+  }
+}, 420000);
