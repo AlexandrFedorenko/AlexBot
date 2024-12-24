@@ -27,6 +27,9 @@ const PORT = process.env.PORT || 3000;
 
 process.env.TZ = process.env.TIMEZONE || 'UTC';
 
+console.log('🕒 Current Server Time (Local):', new Date().toLocaleString());
+console.log('🌍 Current Timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+
 // Check for correct environment variables
 if (!BOT_API_TOKEN || isNaN(ADMIN_ID)) {
   console.error('Error: BOT_API_TOKEN или ADMIN_ID не установлены/некорректны в .env');
@@ -438,7 +441,15 @@ if (isProduction) {
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
-// a small fix for free hosting that does not fall asleep, if paid to remove!
 setInterval(() => {
-  console.log('🚀 The server is active, execute the task...');
-}, 600000);
+  const keepAliveUrl = WEBHOOK_DOMAIN;
+  
+  axios.get(keepAliveUrl)
+    .then(() => {
+      console.log('🚀 Keep-alive ping sent successfully to:', keepAliveUrl);
+    })
+    .catch(err => {
+      console.error('❌ Error during keep-alive ping to', keepAliveUrl, ':', err.message);
+    });
+}, 420000); 
+
