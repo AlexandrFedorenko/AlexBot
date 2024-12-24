@@ -16,7 +16,7 @@ async function handleRates(ctx, generatingMessage, resultMessage, errorMessage) 
 
     const cryptoResponse = await axios.get(process.env.COINGECKO_API_URL, {
       params: {
-        ids: 'bitcoin,ethereum,solana,toncoin,dogecoin',
+        ids: 'bitcoin,ethereum,solana,the-open-network,dogecoin',
         vs_currencies: 'usd'
       },
     });
@@ -26,7 +26,7 @@ async function handleRates(ctx, generatingMessage, resultMessage, errorMessage) 
     const bitcoin = cryptoData?.bitcoin?.usd || 'N/A';
     const ethereum = cryptoData?.ethereum?.usd || 'N/A';
     const solana = cryptoData?.solana?.usd || 'N/A';
-    const toncoin = cryptoData?.toncoin?.usd || 'N/A';
+    const toncoin = cryptoData?.['the-open-network']?.usd || 'N/A';
     const dogecoin = cryptoData?.dogecoin?.usd || 'N/A';
 
     // Generating data for the message

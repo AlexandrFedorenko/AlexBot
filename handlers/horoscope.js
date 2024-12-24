@@ -25,7 +25,7 @@ async function handleHoroscope(ctx, sign, day = 'today', errorMessage) {
     };
 
     const response = await axios.request(options);
-    console.log('🔥 Ответ от нового API:', response.data);
+    //console.log('🔥 Ответ от нового API:', response.data);
 
     // IMPORTANT! Look at the structure:
     // {
