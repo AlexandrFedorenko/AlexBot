@@ -440,16 +440,3 @@ if (isProduction) {
 // Graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
-
-setInterval(() => {
-  const keepAliveUrl = WEBHOOK_DOMAIN;
-  
-  axios.get(keepAliveUrl)
-    .then(() => {
-      console.log('🚀 Keep-alive ping sent successfully to:', keepAliveUrl);
-    })
-    .catch(err => {
-      console.error('❌ Error during keep-alive ping to', keepAliveUrl, ':', err.message);
-    });
-}, 420000); 
-
