@@ -19,6 +19,16 @@ const isProduction = NODE_ENV === 'production';
 const WEBHOOK_DOMAIN = process.env.WEBHOOK_DOMAIN;
 const PORT = process.env.PORT || 3000;
 
+process.env.TZ = process.env.TIMEZONE || 'UTC';
+console.log('🕒 Активная таймзона Node.js:', process.env.TZ);
+console.log('🕒 Текущее серверное время:', new Date().toLocaleString());
+
+console.log('🕒 Текущая таймзона Node.js:', process.env.TZ);
+console.log('🕒 Проверка даты:', new Date('2024-12-28T12:00:15').toLocaleString());
+console.log('🕒 Проверка даты:', new Date('2024-12-24T17:17:15').toLocaleString());
+console.log('🕒 Проверка даты:', new Date('2024-12-25T10:00:15').toLocaleString());
+console.log('🕒 Проверка даты:', new Date('2025-01-01T00:00:00').toLocaleString());
+
 if (!BOT_API_TOKEN || isNaN(ADMIN_ID)) {
   console.error('Error: BOT_API_TOKEN or ADMIN_ID is not set or is incorrect in the .env file.');
   process.exit(1);
@@ -67,7 +77,7 @@ function scheduleMessage(date, message) {
 const date1 = new Date('2024-12-28T12:00:15');
 const message1 = 'Привіт! Нагадуємо, що скоро Новий рік. Готуйтеся до свят! "Хильни чарку 😉🎆" 🎄';
 
-const date4 = new Date('2024-12-24T17:17:15');
+const date4 = new Date('2024-12-24T17:35:15');
 const message4 = 'Привіт! Нагадуємо, що скоро Новий рік. Готуйтеся до свят! "Хильни чарку 😉🎆" 🎄';
 
 const date3 = new Date('2024-12-25T10:00:15');
