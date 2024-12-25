@@ -3,6 +3,7 @@ const { Telegraf, Markup } = require('telegraf');
 const fs = require('fs');
 const axios = require('axios');
 const schedule = require('node-schedule');
+const express = require('express');
 
 const {
   showCityMenu,
@@ -35,6 +36,20 @@ if (!BOT_API_TOKEN || isNaN(ADMIN_ID)) {
   console.error('Error: BOT_API_TOKEN или ADMIN_ID не установлены/некорректны в .env');
   process.exit(1);
 }
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('🤖 Bot is running via Polling!');
+});
+
+
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.listen(PORT, () => {
+  console.log(`✅ HTTP server is listening on port ${PORT}`);
+});
 
 const bot = new Telegraf(BOT_API_TOKEN);
 let userStates = {};
@@ -444,3 +459,4 @@ console.log(`🚀 Bot launched in POLLING mode`);
 // Graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
+
