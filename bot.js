@@ -424,29 +424,23 @@ bot.on('text', async (ctx) => {
 /**
  * Start Bot
  */
-if (isProduction) {
-  bot.launch({
-    webhook: {
-      domain: WEBHOOK_DOMAIN,
-      port: PORT,
-    },
-  });
-  console.log('🚀 Bot launched in webhook mode');
-} else {
-  bot.launch();
-  console.log('🚀 Bot launched in polling mode');
-}
+
+(async () => {
+  try {
+    await bot.launch({
+      polling: {
+        timeout: 30,
+        limit: 100,
+      },
+    });
+    console.log(`[${new Date().toISOString()}] 🚀 Bot launched in POLLING mode`);
+  } catch (err) {
+    console.error(`[${new Date().toISOString()}] ❌ Failed to launch bot:`, err.message);
+  }
+})();
+
+console.log(`🚀 Bot launched in POLLING mode`);
 
 // Graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
-
-
-setInterval(async () => {
-  try {
-    await bot.telegram.getMe();
-    console.log('✅ Keep-Alive via Telegram (getMe) executed successfully');
-  } catch (err) {
-    console.error('❌ Keep-Alive via Telegram (getMe) failed:', err.message);
-  }
-}, 420000);
