@@ -3,7 +3,15 @@ node_modules/
 
 # Environment files
 .env
+.env.local
+.env.production
+.env.development
+.env.*.local
 key.json
+*-key.json
+firebase-key.json
+firebase-service-account.json
+service-account*.json
 
 # Logs
 *.log
@@ -22,3 +30,17 @@ Thumbs.db
 # Git temporary files
 *.swp
 *.swo
+
+# TypeScript build output
+dist/
+*.tsbuildinfo
+
+# Firebase Service Account keys (from MEMORY_BANK.md - FIREBASE_SERVICE_ACCOUNT_KEY_PATH)
+firebase-key.json
+firebase-service-account.json
+service-account*.json
+*-firebase-key.json
+*-service-account.json
+
+# Documentation (internal)
+docs/

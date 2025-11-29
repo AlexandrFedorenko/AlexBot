@@ -1,0 +1,61 @@
+import schedule from 'node-schedule';
+import { Telegraf } from 'telegraf';
+import { loadUsers } from './users.service';
+import { getNextYear, getNextNewYearDate, getDecember24Date, getDecember25Date, getDecember28Date } from '../utils/date.utils';
+
+export interface ScheduledMessage {
+  date: Date;
+  message: string;
+}
+
+/**
+ * Schedule message to all users
+ */
+export function scheduleMessage(bot: Telegraf, date: Date, message: string): void {
+  schedule.scheduleJob(date, async () => {
+    console.log(`The dispatch scheduler is running: ${new Date()}`);
+
+    try {
+      const users = await loadUsers();
+      for (const user of users) {
+        const telegramId = user.telegramId;
+        await bot.telegram.sendMessage(telegramId, message);
+        console.log(`Message sent to user ${user.username}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error when sending scheduled messages:', errorMessage);
+    }
+  });
+}
+
+/**
+ * Initialize all scheduled messages
+ */
+export function initializeScheduledMessages(bot: Telegraf): void {
+  const nextYear = getNextYear();
+
+  const scheduledMessages: ScheduledMessage[] = [
+    {
+      date: getDecember28Date(),
+      message: 'Привіт! Нагадуємо, що скоро Новий рік. Готуйтеся до свят! 😉🎆" 🎄'
+    },
+    {
+      date: getDecember24Date(),
+      message: 'Тест: Привіт! Нагадуємо, що скоро Новий рік. Готуйтеся до свят! 😉🎆" 🎄'
+    },
+    {
+      date: getDecember25Date(),
+      message: '🎄✨ З Різдвом Христовим! ✨🎄 Нехай це світле свято принесе у ваш дім радість, затишок і любов. ❤️ Бажаємо вам міцного здоров\'я, душевного спокою та Божої благодаті. 🌟 Нехай у ваших серцях панує віра, надія та любов. 🎁 Мирного неба над головою та щасливых свят! 🕊️🎶'
+    },
+    {
+      date: getNextNewYearDate(),
+      message: `🎆✨ З Новим Роком! ✨🎆 Нехай ${nextYear} рік стане роком щастя, здоров'я та здійснення всіх заповітних мрій! 🥂 Бажаємо вам яскравых моментів, теплих зустрічей, невичерпної енергії для нових звершень та мирного неба над головою. 🌟 Зі святом! 🎄🎁😉`
+    }
+  ];
+
+  scheduledMessages.forEach(({ date, message }) => {
+    scheduleMessage(bot, date, message);
+  });
+}
+
