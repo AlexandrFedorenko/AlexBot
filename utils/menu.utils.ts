@@ -8,7 +8,7 @@ export function getMainMenuButtons(userId: number, texts: Texts): string[][] {
   const buttons: string[][] = [
     [texts.buttons.new_year, texts.buttons.weather],
     [texts.buttons.weather_3days, texts.buttons.horoscope],
-    [texts.buttons.motivation, texts.buttons.rates],
+    [texts.buttons.cocktail, texts.buttons.rates],
   ];
 
   if (userId === config.bot.adminId) {

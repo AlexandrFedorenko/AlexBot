@@ -31,7 +31,7 @@ export interface Texts {
     new_year: string;
     weather: string;
     weather_3days: string;
-    motivation: string;
+    cocktail: string;
     remove_user: string;
     test_broadcast: string;
     list_recipients: string;
@@ -42,9 +42,8 @@ export interface Texts {
   };
   messages: {
     new_year_time: string;
-    motivation_generating: string;
-    motivation_result: string;
-    motivation_error: string;
+    cocktail_generating: string;
+    cocktail_error: string;
     weather_prompt: string;
     weather_result: string;
     weather_error: string;
@@ -112,10 +111,6 @@ export interface WeatherForecastResponse {
   }>;
 }
 
-export interface MotivationResponse {
-  quote: string;
-  author: string;
-}
 
 export interface CurrencyRate {
   cc: string;

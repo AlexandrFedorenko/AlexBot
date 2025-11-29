@@ -9,7 +9,7 @@ import {
   handleWeatherInput,
   handleWeatherForecast
 } from './weather';
-import { handleMotivation } from './motivation';
+import { handleCocktail } from './cocktail';
 import { handleRates } from './rates';
 import { getTimeUntilNewYear } from './newyear';
 import { handleListUsers } from './listUsers';
@@ -104,14 +104,13 @@ export function registerBotHandlers(bot: Telegraf, texts: Texts): void {
   });
 
   /**
-   * Motivation button
+   * Cocktail button
    */
-  bot.hears(texts.buttons.motivation, async (ctx: BotContext) => {
-    await handleMotivation(
+  bot.hears(texts.buttons.cocktail, async (ctx: BotContext) => {
+    await handleCocktail(
       ctx,
-      texts.messages.motivation_generating,
-      texts.messages.motivation_result,
-      texts.messages.motivation_error
+      texts.messages.cocktail_generating,
+      texts.messages.cocktail_error
     );
   });
 
