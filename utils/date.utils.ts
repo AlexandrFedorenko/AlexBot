@@ -44,3 +44,27 @@ export function getDecember25Date(): Date {
   return new Date(currentYear, 11, 25, 10, 0, 15);
 }
 
+/**
+ * Get date for December 1 of current year at 12:00
+ */
+export function getDecember1Date(): Date {
+  const currentYear = getCurrentYear();
+  return new Date(currentYear, 11, 1, 12, 0, 0); // month is 0-indexed, so 11 = December
+}
+
+/**
+ * Calculate days and minutes until New Year
+ * Returns formatted string: "X днів, Y хвилин"
+ */
+export function getDaysAndMinutesUntilNewYear(): string {
+  const now = new Date();
+  const nextYear = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0);
+  const diff = nextYear.getTime() - now.getTime();
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const remainingMs = diff - (days * 1000 * 60 * 60 * 24);
+  const minutes = Math.floor(remainingMs / (1000 * 60));
+
+  return `${days} днів, ${minutes} хвилин`;
+}
+

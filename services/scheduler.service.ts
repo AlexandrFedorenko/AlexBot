@@ -1,7 +1,7 @@
 import schedule from 'node-schedule';
 import { Telegraf } from 'telegraf';
 import { loadUsers } from './users.service';
-import { getNextYear, getNextNewYearDate, getDecember24Date, getDecember25Date, getDecember28Date } from '../utils/date.utils';
+import { getNextYear, getNextNewYearDate, getDecember24Date, getDecember25Date, getDecember28Date, getDecember1Date, getDaysAndMinutesUntilNewYear } from '../utils/date.utils';
 
 export interface ScheduledMessage {
   date: Date;
@@ -30,11 +30,42 @@ export function scheduleMessage(bot: Telegraf, date: Date, message: string): voi
 }
 
 /**
+ * Schedule December 1 message with dynamic time calculation
+ */
+function scheduleDecember1Message(bot: Telegraf): void {
+  const date = getDecember1Date();
+  
+  schedule.scheduleJob(date, async () => {
+    console.log(`The dispatch scheduler is running: ${new Date()}`);
+    
+    // Calculate time remaining at the moment of sending
+    const timeRemaining = getDaysAndMinutesUntilNewYear();
+    const message = `До нового року залишилось - ${timeRemaining}`;
+
+    try {
+      const users = await loadUsers();
+      for (const user of users) {
+        const telegramId = user.telegramId;
+        await bot.telegram.sendMessage(telegramId, message);
+        console.log(`Message sent to user ${user.username}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error when sending scheduled messages:', errorMessage);
+    }
+  });
+}
+
+/**
  * Initialize all scheduled messages
  */
 export function initializeScheduledMessages(bot: Telegraf): void {
   const nextYear = getNextYear();
 
+  // Schedule December 1 message separately (dynamic message)
+  scheduleDecember1Message(bot);
+
+  // Schedule static messages
   const scheduledMessages: ScheduledMessage[] = [
     {
       date: getDecember28Date(),
