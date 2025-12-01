@@ -20,14 +20,29 @@ export function scheduleMessage(bot: Telegraf, date: Date, message: string | (()
 
     try {
       const users = await loadUsers();
+      console.log(`[Scheduler] Starting broadcast to ${users.length} users`);
+      
+      let successCount = 0;
+      let failCount = 0;
+      
       for (const user of users) {
-        const telegramId = user.telegramId;
-        await bot.telegram.sendMessage(telegramId, finalMessage);
-        console.log(`Message sent to user ${user.username}`);
+        try {
+          const telegramId = user.telegramId;
+          await bot.telegram.sendMessage(telegramId, finalMessage);
+          console.log(`✓ Message sent to user ${user.username || telegramId}`);
+          successCount++;
+        } catch (userError) {
+          const errorMessage = userError instanceof Error ? userError.message : 'Unknown error';
+          console.error(`✗ Failed to send to user ${user.username || user.telegramId}: ${errorMessage}`);
+          failCount++;
+          // Continue to next user even if this one failed
+        }
       }
+      
+      console.log(`[Scheduler] Broadcast completed: ${successCount} sent, ${failCount} failed`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error when sending scheduled messages:', errorMessage);
+      console.error('Error when loading users for scheduled messages:', errorMessage);
     }
   });
 }
