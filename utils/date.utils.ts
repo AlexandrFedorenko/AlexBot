@@ -45,11 +45,11 @@ export function getDecember25Date(): Date {
 }
 
 /**
- * Get date for December 1 of current year at 12:00
+ * Get date for December 1 of current year at 14:00
  */
 export function getDecember1Date(): Date {
   const currentYear = getCurrentYear();
-  return new Date(currentYear, 11, 1, 12, 0, 0); // month is 0-indexed, so 11 = December
+  return new Date(currentYear, 11, 1, 14, 0, 0); // month is 0-indexed, so 11 = December
 }
 
 /**
